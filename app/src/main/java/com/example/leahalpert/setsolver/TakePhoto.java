@@ -155,13 +155,21 @@ public class TakePhoto extends AppCompatActivity {
      * Takes an image URI, finds sets in the image, and outlines the cards that are part of the set.
      * @return the image with outlined cards
      */
-    // TODO: Fill in this function!
+    // TODO: Fill in this function! Replace with real code...
     // TODO: To find the sets from the Cards, use List<List<Integer>> results = SetFinder.findSets(cards);
     private Bitmap computeAndCircleSets(Uri uri) {
-        
+
         try {
             Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), uri);
-            return bitmap;
+            Mat imgToProcess = new Mat(bitmap.getWidth(), bitmap.getHeight(), CvType.CV_8UC1);
+            Utils.bitmapToMat(bitmap, imgToProcess);
+
+            Imgproc.cvtColor(imgToProcess, imgToProcess, Imgproc.COLOR_BGR2GRAY);
+            Imgproc.cvtColor(imgToProcess, imgToProcess, Imgproc.COLOR_GRAY2RGBA, 4);
+
+            Bitmap bmpOut = Bitmap.createBitmap(imgToProcess.cols(), imgToProcess.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(imgToProcess, bmpOut);
+            return bmpOut;
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -222,6 +230,8 @@ public class TakePhoto extends AppCompatActivity {
 
         Card[] cardArr = cards.toArray(new Card[cards.size()]);
         return cardArr;
+
+        // example usage: List<List<Integer>> results = SetFinder.findSets(cards);
 
     }
 }
