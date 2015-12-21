@@ -13,6 +13,7 @@
     tools:showIn="@layout/activity_take_photo">
 
     <TextView
+        android:id="@+id/textDisplay"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Welcome to Set Solver!" />

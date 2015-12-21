@@ -16,11 +16,15 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 public class TakePhoto extends AppCompatActivity {
     private Uri fileUri;
@@ -111,11 +115,45 @@ public class TakePhoto extends AppCompatActivity {
 
             ImageView imageView = (ImageView) findViewById(R.id.imageDisplay);
             imageView.setImageURI(fileUri);
+            Card[] cards = idCards(fileUri);
+            List<List<Integer>> results = SetFinder.findSets(cards);
+            TextView textView = (TextView) findViewById(R.id.textDisplay);
+            textView.setText(results.toString());
+            
+
+
 
         } else if (resultCode == RESULT_CANCELED) {
             Toast.makeText(this, "CANCELLED", Toast.LENGTH_LONG).show();
         } else {
             Toast.makeText(this, "FAILED", Toast.LENGTH_LONG).show();
         }
+    }
+
+    public Card[] idCards(Uri imageUri) {
+        Card cardOne = new Card(
+                Card.Shape.SQUIGGLE,
+                Card.Shading.OPEN,
+                Card.Count.ONE,
+                Card.Color.GREEN, 1);
+
+        Card cardTwo = new Card(
+                Card.Shape.OVAL,
+                Card.Shading.OPEN,
+                Card.Count.ONE,
+                Card.Color.GREEN, 2);
+
+        Card cardThree = new Card(
+                Card.Shape.DIAMOND,
+                Card.Shading.OPEN,
+                Card.Count.ONE,
+                Card.Color.GREEN, 3);
+        ArrayList<Card> cards = new ArrayList<Card>(
+                Arrays.asList(cardOne, cardTwo, cardThree));
+
+
+        Card[] cardArr = cards.toArray(new Card[cards.size()]);
+        return cardArr;
+
     }
 }
