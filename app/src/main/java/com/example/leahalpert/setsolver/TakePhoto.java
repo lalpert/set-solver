@@ -1,19 +1,50 @@
 package com.example.leahalpert.setsolver;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ImageView;
 import android.widget.Toast;
 
+import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 public class TakePhoto extends AppCompatActivity {
+    private Uri fileUri;
+
+    /** Create a file Uri for saving an image or video */
+    private Uri getOutputMediaFileUri(){
+        File extFiles = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File mediaStorageDir = new File(extFiles, "SetSolverApp");
+
+        // Create the storage directory if it does not exist
+        if (! mediaStorageDir.exists()){
+            if (! mediaStorageDir.mkdirs()){
+                Log.d("SetSolverApp", "failed to create directory");
+                return null;
+            }
+        }
+
+        // Create a media file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        File file = new File(mediaStorageDir.getPath() + File.separator +
+                    "IMG_"+ timeStamp + ".jpg");
+
+        return Uri.fromFile(file);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,14 +87,31 @@ public class TakePhoto extends AppCompatActivity {
 
     public void takePhotoMessage(View view) {
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        startActivityForResult(intent, 0);
+       fileUri = getOutputMediaFileUri(); // create a file to save the image
+        Log.d("SetSolverApp", "URI: " + fileUri + fileUri.toString());
+
+       intent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri); // set the image file name
+        startActivityForResult(intent, 1);
+
     }
 
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+    public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         if (resultCode == RESULT_OK) {
             // Image captured and saved to fileUri specified in the Intent
+           // Uri uri = intent.getParcelableExtra(MediaStore.EXTRA_OUTPUT);
+           // Log.d("SetSolverApp", "GOT URI: " + uri + uri.toString());
+
+           Uri data = intent.getData();
+            Log.d("SetSolverApp", "DATA: " + data);
+
+
+
             Toast.makeText(this, "Image saved to:\n" +
-                    data.getData(), Toast.LENGTH_LONG).show();
+                    fileUri, Toast.LENGTH_LONG).show();
+
+            ImageView imageView = (ImageView) findViewById(R.id.imageDisplay);
+            imageView.setImageURI(fileUri);
+
         } else if (resultCode == RESULT_CANCELED) {
             Toast.makeText(this, "CANCELLED", Toast.LENGTH_LONG).show();
         } else {
