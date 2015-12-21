@@ -3,6 +3,7 @@ package com.example.leahalpert.setsolver;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -19,7 +20,17 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.features2d.FeatureDetector;
+import org.opencv.imgproc.Imgproc;
+
 import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,6 +38,26 @@ import java.util.Date;
 import java.util.List;
 
 public class TakePhoto extends AppCompatActivity {
+
+    private static final String  TAG = "TakePhoto";
+
+    /** Connect to Android OpenCVManager */
+    private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
+        @Override
+        public void onManagerConnected(int status) {
+            switch (status) {
+                case LoaderCallbackInterface.SUCCESS:
+                {
+                    Log.i(TAG, "OpenCV loaded successfully");
+                } break;
+                default:
+                {
+                    super.onManagerConnected(status);
+                } break;
+            }
+        }
+    };
+
     private Uri fileUri;
 
     /** Create a file Uri for saving an image or video */
@@ -53,6 +84,7 @@ public class TakePhoto extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_0_0, this, mLoaderCallback);
         setContentView(R.layout.activity_take_photo);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -89,45 +121,81 @@ public class TakePhoto extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    /**
+     * When you click the "take photos" button, this function opens the camera app
+     */
     public void takePhotoMessage(View view) {
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-       fileUri = getOutputMediaFileUri(); // create a file to save the image
-        Log.d("SetSolverApp", "URI: " + fileUri + fileUri.toString());
-
-       intent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri); // set the image file name
+        fileUri = getOutputMediaFileUri(); // create a file to save the image
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri); // set the image file name
         startActivityForResult(intent, 1);
-
     }
 
+    /**
+     * This function runs after a photo is taken from the camera app and saved to the phone
+     */
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         if (resultCode == RESULT_OK) {
-            // Image captured and saved to fileUri specified in the Intent
-           // Uri uri = intent.getParcelableExtra(MediaStore.EXTRA_OUTPUT);
-           // Log.d("SetSolverApp", "GOT URI: " + uri + uri.toString());
-
-           Uri data = intent.getData();
-            Log.d("SetSolverApp", "DATA: " + data);
-
-
-
-            Toast.makeText(this, "Image saved to:\n" +
-                    fileUri, Toast.LENGTH_LONG).show();
-
             ImageView imageView = (ImageView) findViewById(R.id.imageDisplay);
-            imageView.setImageURI(fileUri);
-            Card[] cards = idCards(fileUri);
-            List<List<Integer>> results = SetFinder.findSets(cards);
-            TextView textView = (TextView) findViewById(R.id.textDisplay);
-            textView.setText(results.toString());
-            
 
+            // For debugging
+            // Bitmap bitmap = displayGrayScaleImage(fileUri);
 
+            Bitmap bitmap = computeAndCircleSets(fileUri);
+            imageView.setImageBitmap(bitmap);
 
         } else if (resultCode == RESULT_CANCELED) {
             Toast.makeText(this, "CANCELLED", Toast.LENGTH_LONG).show();
         } else {
             Toast.makeText(this, "FAILED", Toast.LENGTH_LONG).show();
         }
+    }
+
+    /**
+     * Takes an image URI, finds sets in the image, and outlines the cards that are part of the set.
+     * @return the image with outlined cards
+     */
+    // TODO: Fill in this function!
+    // TODO: To find the sets from the Cards, use List<List<Integer>> results = SetFinder.findSets(cards);
+    private Bitmap computeAndCircleSets(Uri uri) {
+        
+        try {
+            Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), uri);
+            return bitmap;
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+    }
+
+    private Bitmap displayGrayScaleImage(Uri uri) {
+
+        try {
+            Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), uri);
+            Mat imgToProcess = new Mat (bitmap.getWidth(), bitmap.getHeight(), CvType.CV_8UC1);
+            Utils.bitmapToMat(bitmap, imgToProcess);
+
+            Imgproc.cvtColor(imgToProcess, imgToProcess, Imgproc.COLOR_BGR2GRAY);
+            Imgproc.cvtColor(imgToProcess, imgToProcess, Imgproc.COLOR_GRAY2RGBA, 4);
+
+            Bitmap bmpOut = Bitmap.createBitmap(imgToProcess.cols(), imgToProcess.rows(), Bitmap.Config.ARGB_8888);
+            Utils.matToBitmap(imgToProcess, bmpOut);
+            return bmpOut;
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    public void testSetAlgorithm() {
+        Card[] cards = idCards(fileUri);
+        List<List<Integer>> results = SetFinder.findSets(cards);
+        TextView textView = (TextView) findViewById(R.id.textDisplay);
+        textView.setText(results.toString());
     }
 
     public Card[] idCards(Uri imageUri) {
