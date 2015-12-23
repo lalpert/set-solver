@@ -40,6 +40,7 @@ import java.util.List;
 public class TakePhoto extends AppCompatActivity {
 
     private static final String  TAG = "TakePhoto";
+    final int PICK_IMAGE_REQUEST = 123;
 
     /** Connect to Android OpenCVManager */
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
@@ -132,10 +133,39 @@ public class TakePhoto extends AppCompatActivity {
         startActivityForResult(intent, 1);
     }
 
+    public void loadGalleryPhoto(View view) {
+
+        Intent intent = new Intent();
+        // Show only images, no videos or anything else
+        intent.setType("image/*");
+        intent.setAction(Intent.ACTION_GET_CONTENT);
+        // Always show the chooser (if there are multiple options available)
+        startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE_REQUEST);
+    }
+
     /**
      * This function runs after a photo is taken from the camera app and saved to the phone
      */
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        Intent data = intent;
+        switch (requestCode) {
+            case PICK_IMAGE_REQUEST:
+                if (resultCode == RESULT_OK && data != null && data.getData() != null) {
+
+                    Uri uri = data.getData();
+
+
+                    ImageView imageView = (ImageView) findViewById(R.id.imageDisplay);
+
+                    // For debugging
+                    // Bitmap bitmap = displayGrayScaleImage(fileUri);
+
+                    Bitmap bitmap = computeAndCircleSets(uri);
+                    imageView.setImageBitmap(bitmap);
+                    return;
+
+                }
+        }
         if (resultCode == RESULT_OK) {
             ImageView imageView = (ImageView) findViewById(R.id.imageDisplay);
 
@@ -164,12 +194,12 @@ public class TakePhoto extends AppCompatActivity {
             Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), uri);
             Mat imgToProcess = new Mat(bitmap.getWidth(), bitmap.getHeight(), CvType.CV_8UC1);
             Utils.bitmapToMat(bitmap, imgToProcess);
+            Mat result = SetCVLib.computeAndCircleSets(imgToProcess);
 
-            Imgproc.cvtColor(imgToProcess, imgToProcess, Imgproc.COLOR_BGR2GRAY);
-            Imgproc.cvtColor(imgToProcess, imgToProcess, Imgproc.COLOR_GRAY2RGBA, 4);
+            Bitmap bmpOut = Bitmap.createBitmap(result.cols(), result.rows(), Bitmap.Config.ARGB_8888);
 
-            Bitmap bmpOut = Bitmap.createBitmap(imgToProcess.cols(), imgToProcess.rows(), Bitmap.Config.ARGB_8888);
-            Utils.matToBitmap(imgToProcess, bmpOut);
+
+            Utils.matToBitmap(result, bmpOut);
             return bmpOut;
 
         } catch (IOException e) {
@@ -177,27 +207,6 @@ public class TakePhoto extends AppCompatActivity {
             return null;
         }
 
-    }
-
-    private Bitmap displayGrayScaleImage(Uri uri) {
-
-        try {
-            Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), uri);
-            Mat imgToProcess = new Mat (bitmap.getWidth(), bitmap.getHeight(), CvType.CV_8UC1);
-            Utils.bitmapToMat(bitmap, imgToProcess);
-
-            Imgproc.cvtColor(imgToProcess, imgToProcess, Imgproc.COLOR_BGR2GRAY);
-            Imgproc.cvtColor(imgToProcess, imgToProcess, Imgproc.COLOR_GRAY2RGBA, 4);
-
-            Bitmap bmpOut = Bitmap.createBitmap(imgToProcess.cols(), imgToProcess.rows(), Bitmap.Config.ARGB_8888);
-            Utils.matToBitmap(imgToProcess, bmpOut);
-            return bmpOut;
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return null;
     }
 
     public void testSetAlgorithm() {
