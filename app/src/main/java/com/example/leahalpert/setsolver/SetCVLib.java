@@ -88,6 +88,15 @@ public class SetCVLib {
         return ret;
     }
 
+    private static Mat prepImageOtsu(Mat img) {
+        Mat ret = img.clone();
+        Imgproc.cvtColor(ret, ret, Imgproc.COLOR_BGR2GRAY);
+        Size kern = new Size(1, 1);
+        Imgproc.GaussianBlur(ret, ret, kern, 1000);
+        Imgproc.threshold(ret, ret, 0, 255, Imgproc.THRESH_BINARY + Imgproc.THRESH_OTSU);
+        return ret;
+    }
+
     private static Mat inversePrep(Mat img, int thresh) {
 
         // TODO: try adaptive
@@ -175,7 +184,7 @@ public class SetCVLib {
     }
 
     private static Card recognizeCard(Mat card) {
-        Mat prepped = prepImage(card, 160);
+        Mat prepped = prepImageOtsu(card);
         List<MatOfPoint> allContours = areaSortedContours(prepped.clone(), Imgproc.RETR_CCOMP);
         // The 0th contour is the card, the remaining 3 could be shapes
         List<MatOfPoint> possibleContours = allContours.subList(1, Math.min(4, allContours.size()));
