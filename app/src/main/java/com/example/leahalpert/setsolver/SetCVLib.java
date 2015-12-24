@@ -159,7 +159,7 @@ public class SetCVLib {
         List<Point> corners = new ArrayList<>();
         Converters.Mat_to_vector_Point2f(cornersMat, corners);
         if (corners.size() != 4) {
-            throw new RuntimeException("Not a quadrilateral");
+            Log.e("SET", "Not a quadrilateral");
         }
 
         // Create the target points

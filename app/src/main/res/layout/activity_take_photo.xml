@@ -24,6 +24,18 @@
     <include layout="@layout/content_take_photo" />
 
     <android.support.design.widget.FloatingActionButton
+        android:id="@+id/takephoto"
+        android:onClick="takePhotoMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="@dimen/fab_margin"
+        android:layout_marginRight="82dp"
+        android:scaleType="center"
+        android:src="@android:drawable/ic_menu_camera" />
+
+
+    <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab"
         android:onClick="loadGalleryPhoto"
         android:layout_width="wrap_content"
@@ -31,6 +43,5 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/fab_margin"
         android:scaleType="center"
-        android:src="@android:drawable/ic_menu_camera" />
-
+        android:src="@android:drawable/ic_menu_gallery" />
 </android.support.design.widget.CoordinatorLayout>
