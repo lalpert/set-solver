@@ -11,6 +11,22 @@ public class Card {
     Color color;
     int id;
 
+    public String toString() {
+        return count.toString() + "," + shape.toString();
+    }
+    public static Count intToCount(int i) {
+        switch (i) {
+            case 1:
+                return Count.ONE;
+            case 2:
+                return Count.TWO;
+            case 3:
+                return Count.THREE;
+
+        }
+        throw new RuntimeException("Count " + i + " invalid.");
+    }
+
     public Card(Shape shape, Shading shading, Count count, Color color, int id) {
         this.shape = shape;
         this.shading = shading;
