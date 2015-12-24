@@ -9,7 +9,6 @@ import com.example.leahalpert.setsolver.contours.Oval;
 import com.example.leahalpert.setsolver.contours.Squiggle;
 
 import org.opencv.core.Core;
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
@@ -222,15 +221,29 @@ public class SetCVLib {
         Scalar avg = Core.sumElems(maskedFigure);
         double scaleFactor = Core.sumElems(thresholdedFigure).val[0] / 255;
         Scalar colors = avg.mul(Scalar.all(1), 1 / scaleFactor);
-        double red = colors.val[0];
-        double green = colors.val[1];
-        double blue = colors.val[2];
-        //globalRet = thresholdedFigure;
-        Log.i(Tag, "red: " + red + "blue: "+ blue + "green: "+ green);
-        if (red > 100 && blue > 100 && green < 110) {
-            return Card.Color.PURPLE;
-        } else if (green > 100) {
+        Scalar yuv = rgbToYUV(colors);
+        return identifyYuv(yuv);
+    }
+
+    private static Scalar rgbToYUV(Scalar rgb) {
+        double r = rgb.val[0];
+        double g = rgb.val[1];
+        double b = rgb.val[2];
+
+        double y =  0.299 * r + 0.587 * g + 0.114 * b;
+        double u = -0.147 * r - 0.289 * g + 0.436 * b;
+        double v =  0.615 * r - 0.515 * g - 0.100 * b;
+        return new Scalar(y,u,v);
+    }
+
+    private static Card.Color identifyYuv(Scalar yuv) {
+
+        double u = yuv.val[1];
+        double v = yuv.val[2];
+        if (u <= 0 && v <= 0) {
             return Card.Color.GREEN;
+        } else if (u > 0 && v > 0) {
+            return Card.Color.PURPLE;
         } else {
             return Card.Color.RED;
         }
