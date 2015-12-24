@@ -8,6 +8,7 @@ import com.example.leahalpert.setsolver.contours.Diamond;
 import com.example.leahalpert.setsolver.contours.Oval;
 import com.example.leahalpert.setsolver.contours.Squiggle;
 
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
@@ -37,6 +38,7 @@ public class SetCVLib {
     final static int MaxCardLikeObjects = 18;
     final static String Tag = "SetCVLib";
 
+    static Mat ret;
     public static Mat computeAndCircleSets(Mat input) {
         // TODO: carefully clone the input
         List<MatOfPoint> cardContours = extractCards(input);
@@ -45,6 +47,7 @@ public class SetCVLib {
             Card recognized = recognizeCard(flattened);
             if (recognized != null) {
                 Log.i(Tag, recognized.toString());
+                // return ret; //prepImage(flattened, 160);
             } else {
                 Log.i(Tag, "Could not find");
                 return flattened;
@@ -143,7 +146,7 @@ public class SetCVLib {
 
     private static Card recognizeCard(Mat card) {
         Mat prepped = prepImage(card, 160);
-        List<MatOfPoint> allContours = areaSortedContours(prepped, Imgproc.RETR_CCOMP);
+        List<MatOfPoint> allContours = areaSortedContours(prepped.clone(), Imgproc.RETR_CCOMP);
         // The 0th contour is the card, the remaining 3 could be shapes
         List<MatOfPoint> possibleContours = allContours.subList(1, Math.min(4, allContours.size()));
         List<MatOfPoint> shapeContours = removeInteriorContours(possibleContours);
@@ -158,27 +161,38 @@ public class SetCVLib {
 
         if (identifiedShapes.size() > 0) {
             Card.Shape head = identifiedShapes.get(0).second;
-            MatOfPoint contour = identifiedShapes.get(1).first;
-            return new Card(head, Card.Shading.OPEN, Card.intToCount(identifiedShapes.size()), Card.Color.GREEN, 0);
+            MatOfPoint contour = identifiedShapes.get(0).first;
+            return new Card(head, identifyShading(prepped, contour), Card.intToCount(identifiedShapes.size()), Card.Color.GREEN, 0);
         }
         return null;
     }
 
     private static Card.Shading identifyShading(Mat thresholdedCard, MatOfPoint contour) {
         Rect boundingBox = Imgproc.boundingRect(contour);
-        
-        /*
-            def identify_fill(card_thresh, cnt):
-        bb = cv2.boundingRect(cnt)
-        average = np.average(center_section(card_thresh, bb))
-        print "average: ", average
-        if average < 100:
-            return "solid"
-        if 100 <= average < 200:
-            return "striped"
-        else:
-            return "empty"
-         */
+        Rect center = centerSection(boundingBox);
+        Mat centerSection = thresholdedCard.submat(center);
+        Log.i(Tag, Core.mean(centerSection).toString());
+        double mean = Core.mean(centerSection).val[0];
+        final int SolidThresh = 100;
+        final int EmptyThresh = 200;
+        ret = thresholdedCard;
+        if (mean < SolidThresh) {
+            return Card.Shading.SOLID;
+        } else if (mean < EmptyThresh) {
+            return Card.Shading.STRIPED;
+        } else {
+            return Card.Shading.OPEN;
+        }
+    }
+
+    private static Rect centerSection(Rect bb) {
+
+        int centX = bb.x + bb.width / 4;
+        int centY = bb.y + bb.height / 4;
+        int centH = bb.height / 2;
+        int centW = bb.width / 2;
+        return new Rect(centX, centY, centW, centH);
+
     }
 
     private static List<MatOfPoint> removeInteriorContours(List<MatOfPoint> contours) {
@@ -220,7 +234,7 @@ public class SetCVLib {
         Card.Shape bestShape = null;
         for (Card.Shape shape : shapeMapping.keySet()) {
             double score = Imgproc.matchShapes(contour, shapeMapping.get(shape), 1, 0.0);
-            Log.i(Tag, "Score: " + score + "shape: " + shape.toString());
+            Log.d(Tag, "Score: " + score + "shape: " + shape.toString());
             if (score <= bestScore) {
                 bestScore = score;
                 bestShape = shape;
@@ -228,20 +242,6 @@ public class SetCVLib {
         }
 
         return bestShape;
-/*def identify_shape(cnt):
-    THRESH = 0.07
-    SHAPES = {
-            "oval": load_contour("oval"),
-            "diamond": load_contour("diamond"),
-            "squiggle": load_contour("squiggle")
-    }
-    res = [(cv2.matchShapes(shape, cnt, 1, 0.0), name) for (name, shape) in SHAPES.iteritems()]
-    score, shape = min(res)
-    if score < THRESH:
-        return (shape, score)
-    else:
-        print shape,score, "MISS"
-        return None*/
     }
 
     private static List<Point> sortedCorners(List<Point> corners) {

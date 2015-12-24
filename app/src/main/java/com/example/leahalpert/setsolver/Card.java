@@ -12,7 +12,7 @@ public class Card {
     int id;
 
     public String toString() {
-        return count.toString() + "," + shape.toString();
+        return count.toString() + "," + shape.toString() + "," + shading.toString();
     }
     public static Count intToCount(int i) {
         switch (i) {
