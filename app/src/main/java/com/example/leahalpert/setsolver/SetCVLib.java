@@ -9,6 +9,7 @@ import com.example.leahalpert.setsolver.contours.Oval;
 import com.example.leahalpert.setsolver.contours.Squiggle;
 
 import org.opencv.core.Core;
+import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
@@ -38,7 +39,7 @@ public class SetCVLib {
     final static int MaxCardLikeObjects = 18;
     final static String Tag = "SetCVLib";
 
-    static Mat ret;
+    static Mat globalRet;
     public static Mat computeAndCircleSets(Mat input) {
         // TODO: carefully clone the input
         List<MatOfPoint> cardContours = extractCards(input);
@@ -47,7 +48,7 @@ public class SetCVLib {
             Card recognized = recognizeCard(flattened);
             if (recognized != null) {
                 Log.i(Tag, recognized.toString());
-                // return ret; //prepImage(flattened, 160);
+                //return globalRet; //prepImage(flattened, 160);
             } else {
                 Log.i(Tag, "Could not find");
                 return flattened;
@@ -65,6 +66,17 @@ public class SetCVLib {
         Size kern = new Size(1, 1);
         Imgproc.GaussianBlur(ret, ret, kern, 1000);
         Imgproc.threshold(ret, ret, thresh, 255, Imgproc.THRESH_BINARY);
+        return ret;
+    }
+
+    private static Mat inversePrep(Mat img, int thresh) {
+
+        // TODO: try adaptive
+        Mat ret = img.clone();
+        Imgproc.cvtColor(ret, ret, Imgproc.COLOR_BGR2GRAY);
+        Size kern = new Size(1, 1);
+        Imgproc.GaussianBlur(ret, ret, kern, 1000);
+        Imgproc.threshold(ret, ret, thresh, 255, Imgproc.THRESH_BINARY_INV);
         return ret;
     }
 
@@ -157,14 +169,44 @@ public class SetCVLib {
                 identifiedShapes.add(new Pair<>(contour, ident));
             }
         }
-        Imgproc.drawContours(card, shapeContours, -1, new Scalar(255, 0, 0), 3);
+
 
         if (identifiedShapes.size() > 0) {
             Card.Shape head = identifiedShapes.get(0).second;
             MatOfPoint contour = identifiedShapes.get(0).first;
-            return new Card(head, identifyShading(prepped, contour), Card.intToCount(identifiedShapes.size()), Card.Color.GREEN, 0);
+            return new Card(head,
+                    identifyShading(prepped, contour),
+                    Card.intToCount(identifiedShapes.size()),
+                    identifyColor(card.clone(), contour),
+                    0);
         }
         return null;
+    }
+    private static Card.Color identifyColor(Mat colorImage, MatOfPoint contour) {
+
+        Rect boundingBox = Imgproc.boundingRect(contour);
+        Mat figure = colorImage.submat(boundingBox);
+        // AHHHH YOU NEED TO SET THIS TO 0 OR YOU WILL BE SAD
+        Mat maskedFigure = new Mat(figure.size(), figure.type(), new Scalar(0));
+
+        Mat thresholdedFigure = inversePrep(figure, 160);
+        figure.copyTo(maskedFigure, thresholdedFigure);
+
+        Scalar avg = Core.sumElems(maskedFigure);
+        double scaleFactor = Core.sumElems(thresholdedFigure).val[0] / 255;
+        Scalar colors = avg.mul(Scalar.all(1), 1 / scaleFactor);
+        double red = colors.val[0];
+        double green = colors.val[1];
+        double blue = colors.val[2];
+        //globalRet = thresholdedFigure;
+        Log.i(Tag, "red: " + red + "blue: "+ blue + "green: "+ green);
+        if (red > 100 && blue > 100 && green < 110) {
+            return Card.Color.PURPLE;
+        } else if (green > 100) {
+            return Card.Color.GREEN;
+        } else {
+            return Card.Color.RED;
+        }
     }
 
     private static Card.Shading identifyShading(Mat thresholdedCard, MatOfPoint contour) {
@@ -175,7 +217,6 @@ public class SetCVLib {
         double mean = Core.mean(centerSection).val[0];
         final int SolidThresh = 100;
         final int EmptyThresh = 200;
-        ret = thresholdedCard;
         if (mean < SolidThresh) {
             return Card.Shading.SOLID;
         } else if (mean < EmptyThresh) {

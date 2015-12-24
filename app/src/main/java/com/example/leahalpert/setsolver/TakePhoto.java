@@ -192,7 +192,7 @@ public class TakePhoto extends AppCompatActivity {
 
         try {
             Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), uri);
-            Mat imgToProcess = new Mat(bitmap.getWidth(), bitmap.getHeight(), CvType.CV_8UC1);
+            Mat imgToProcess = new Mat(bitmap.getWidth(), bitmap.getHeight(), CvType.CV_8UC3);
             Utils.bitmapToMat(bitmap, imgToProcess);
             Mat result = SetCVLib.computeAndCircleSets(imgToProcess);
 
