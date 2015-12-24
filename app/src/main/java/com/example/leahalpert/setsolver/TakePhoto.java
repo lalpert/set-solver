@@ -208,7 +208,7 @@ public class TakePhoto extends AppCompatActivity {
         }
 
     }
-
+/*
     public void testSetAlgorithm() {
         Card[] cards = idCards(fileUri);
         List<List<Integer>> results = SetFinder.findSets(cards);
@@ -244,4 +244,5 @@ public class TakePhoto extends AppCompatActivity {
         // example usage: List<List<Integer>> results = SetFinder.findSets(cards);
 
     }
+    */
 }

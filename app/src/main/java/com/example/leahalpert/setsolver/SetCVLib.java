@@ -43,16 +43,35 @@ public class SetCVLib {
     public static Mat computeAndCircleSets(Mat input) {
         // TODO: carefully clone the input
         List<MatOfPoint> cardContours = extractCards(input);
+
+        List<Card> cards = new ArrayList<Card>();
+
         for (MatOfPoint card : cardContours) {
             Mat flattened = flattenCard(card, input);
             Card recognized = recognizeCard(flattened);
             if (recognized != null) {
                 Log.i(Tag, recognized.toString());
                 //return globalRet; //prepImage(flattened, 160);
+                cards.add(recognized);
             } else {
                 Log.i(Tag, "Could not find");
                 return flattened;
             }
+        }
+
+       List<List<Integer>> sets = SetFinder.findSets(cards);
+        for (List<Integer> set : sets) {
+            Log.i("SETS", set.toString());
+        }
+
+        if (sets.isEmpty()) {
+            Log.i("SETS", "no sets found!");
+            return input;
+        }
+
+        List<Integer> set = sets.get(0);
+        for (Integer i : set) {
+            Imgproc.drawContours(input, cardContours, i, new Scalar(0, 255, 0, 255), 35);
         }
 
         return input;
@@ -110,7 +129,6 @@ public class SetCVLib {
 
         Log.i(Tag, "Found " + filteredContours.size() + " contours");
 
-        Imgproc.drawContours(img, filteredContours, -1, new Scalar(100, 100, 0), 30);
         return filteredContours;
     }
 

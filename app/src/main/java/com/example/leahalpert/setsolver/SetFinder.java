@@ -7,14 +7,14 @@ import java.util.List;
 public class SetFinder {
 
 
-    public static List<List<Integer>> findSets(Card[] args) {
+    public static List<List<Integer>> findSets(List<Card> cards) {
         List<List<Integer>> results = new ArrayList<List<Integer>>();
 
-        int numCards = args.length;
+        int numCards = cards.size();
         for (int i = 0; i < numCards - 2; i++) {
             for (int j = i + 1; j < numCards - 1; j++) {
                 for (int k = j; k < numCards; k++) {
-                    if (makesSet(args[i], args[j], args[k])) {
+                    if (makesSet(cards.get(i), cards.get(j), cards.get(k))) {
                         results.add(Arrays.asList(i, j, k));
                     }
                 }
