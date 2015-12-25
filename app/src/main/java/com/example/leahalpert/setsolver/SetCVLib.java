@@ -2,6 +2,7 @@ package com.example.leahalpert.setsolver;
 
 import android.util.Log;
 import android.util.Pair;
+import android.widget.Toast;
 
 import com.example.leahalpert.setsolver.contours.CardContour;
 import com.example.leahalpert.setsolver.contours.Diamond;
@@ -39,11 +40,11 @@ public class SetCVLib {
     final static String Tag = "SetCVLib";
 
     static Mat globalRet;
-    public static Mat computeAndCircleSets(Mat input) {
-        // TODO: carefully clone the input
+    public static SetResult computeAndCircleSets(Mat input) {
         List<MatOfPoint> cardContours = extractCards(input);
-
         List<Card> cards = new ArrayList<Card>();
+
+        SetResult result = new SetResult();
 
         for (MatOfPoint card : cardContours) {
             Mat flattened = flattenCard(card, input);
@@ -54,7 +55,7 @@ public class SetCVLib {
                 cards.add(recognized);
             } else {
                 Log.i(Tag, "Could not find");
-                return flattened;
+                result.addFailedImage(flattened);
             }
         }
 
@@ -65,15 +66,18 @@ public class SetCVLib {
 
         if (sets.isEmpty()) {
             Log.i("SETS", "no sets found!");
-            return input;
+            return result;
         }
 
-        List<Integer> set = sets.get(0);
-        for (Integer i : set) {
-            Imgproc.drawContours(input, cardContours, i, new Scalar(0, 255, 0, 255), 35);
+        for (List<Integer> set : sets) {
+            Mat setImage = input.clone();
+            for (Integer i : set) {
+                Imgproc.drawContours(setImage, cardContours, i, new Scalar(0, 255, 0, 255), 35);
+            }
+            result.addSetImage(setImage);
         }
 
-        return input;
+        return result;
     }
 
     private static Mat prepImage(Mat img, int thresh) {

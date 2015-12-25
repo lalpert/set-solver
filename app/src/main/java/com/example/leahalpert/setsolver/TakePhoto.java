@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -39,36 +40,40 @@ import java.util.List;
 
 public class TakePhoto extends AppCompatActivity {
 
-    private static final String  TAG = "TakePhoto";
+    private static final String TAG = "TakePhoto";
     final int PICK_IMAGE_REQUEST = 123;
+    final int TAKE_IMAGE_REQUEST = 456;
+    private Uri fileUri;
 
-    /** Connect to Android OpenCVManager */
+    /**
+     * Connect to Android OpenCVManager
+     */
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
             switch (status) {
-                case LoaderCallbackInterface.SUCCESS:
-                {
+                case LoaderCallbackInterface.SUCCESS: {
                     Log.i(TAG, "OpenCV loaded successfully");
-                } break;
-                default:
-                {
+                }
+                break;
+                default: {
                     super.onManagerConnected(status);
-                } break;
+                }
+                break;
             }
         }
     };
 
-    private Uri fileUri;
-
-    /** Create a file Uri for saving an image or video */
-    private Uri getOutputMediaFileUri(){
+    /**
+     * Create a file Uri for saving an image
+     */
+    private Uri getOutputMediaFileUri() {
         File extFiles = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
         File mediaStorageDir = new File(extFiles, "SetSolverApp");
 
         // Create the storage directory if it does not exist
-        if (! mediaStorageDir.exists()){
-            if (! mediaStorageDir.mkdirs()){
+        if (!mediaStorageDir.exists()) {
+            if (!mediaStorageDir.mkdirs()) {
                 Log.d("SetSolverApp", "failed to create directory");
                 return null;
             }
@@ -77,7 +82,7 @@ public class TakePhoto extends AppCompatActivity {
         // Create a media file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         File file = new File(mediaStorageDir.getPath() + File.separator +
-                    "IMG_"+ timeStamp + ".jpg");
+                "IMG_" + timeStamp + ".jpg");
 
         return Uri.fromFile(file);
     }
@@ -89,16 +94,6 @@ public class TakePhoto extends AppCompatActivity {
         setContentView(R.layout.activity_take_photo);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-/*
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
-        */
     }
 
     @Override
@@ -130,15 +125,13 @@ public class TakePhoto extends AppCompatActivity {
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         fileUri = getOutputMediaFileUri(); // create a file to save the image
         intent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri); // set the image file name
-        startActivityForResult(intent, 1);
+        startActivityForResult(intent, TAKE_IMAGE_REQUEST);
     }
 
     public void loadGalleryPhoto(View view) {
-
-        Intent intent = new Intent();
+        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         // Show only images, no videos or anything else
         intent.setType("image/*");
-        intent.setAction(Intent.ACTION_GET_CONTENT);
         // Always show the chooser (if there are multiple options available)
         startActivityForResult(Intent.createChooser(intent, "Select Picture"), PICK_IMAGE_REQUEST);
     }
@@ -148,33 +141,13 @@ public class TakePhoto extends AppCompatActivity {
      */
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
         Intent data = intent;
-        switch (requestCode) {
-            case PICK_IMAGE_REQUEST:
-                if (resultCode == RESULT_OK && data != null && data.getData() != null) {
 
-                    Uri uri = data.getData();
-
-
-                    ImageView imageView = (ImageView) findViewById(R.id.imageDisplay);
-
-                    // For debugging
-                    // Bitmap bitmap = displayGrayScaleImage(fileUri);
-
-                    Bitmap bitmap = computeAndCircleSets(uri);
-                    imageView.setImageBitmap(bitmap);
-                    return;
-
-                }
+        if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
+            fileUri = data.getData();
         }
+
         if (resultCode == RESULT_OK) {
-            ImageView imageView = (ImageView) findViewById(R.id.imageDisplay);
-
-            // For debugging
-            // Bitmap bitmap = displayGrayScaleImage(fileUri);
-
-            Bitmap bitmap = computeAndCircleSets(fileUri);
-            imageView.setImageBitmap(bitmap);
-
+            renderResults();
         } else if (resultCode == RESULT_CANCELED) {
             Toast.makeText(this, "CANCELLED", Toast.LENGTH_LONG).show();
         } else {
@@ -182,31 +155,44 @@ public class TakePhoto extends AppCompatActivity {
         }
     }
 
-    /**
-     * Takes an image URI, finds sets in the image, and outlines the cards that are part of the set.
-     * @return the image with outlined cards
-     */
-    // TODO: Fill in this function! Replace with real code...
-    // TODO: To find the sets from the Cards, use List<List<Integer>> results = SetFinder.findSets(cards);
-    private Bitmap computeAndCircleSets(Uri uri) {
 
+    public void renderResults() {
+        ImageView imageView = (ImageView) findViewById(R.id.imageDisplay);
+
+        Bitmap originalBitmap = null;
+        Mat matToProcess = null;
         try {
-            Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), uri);
-            Mat imgToProcess = new Mat(bitmap.getWidth(), bitmap.getHeight(), CvType.CV_8UC3);
-            Utils.bitmapToMat(bitmap, imgToProcess);
-            Mat result = SetCVLib.computeAndCircleSets(imgToProcess);
-
-            Bitmap bmpOut = Bitmap.createBitmap(result.cols(), result.rows(), Bitmap.Config.ARGB_8888);
-
-
-            Utils.matToBitmap(result, bmpOut);
-            return bmpOut;
-
+            originalBitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), fileUri);
+            matToProcess = bitmapToMat(originalBitmap);
         } catch (IOException e) {
             e.printStackTrace();
-            return null;
+            return;
         }
 
+        SetResult result = SetCVLib.computeAndCircleSets(matToProcess);
+
+        if (result.numSets() > 0) {
+            Bitmap bitmap = matToBitmap(result.getSetImages().get(0));
+            imageView.setImageBitmap(bitmap);
+
+        } else {
+            Toast.makeText(this, "No sets found", Toast.LENGTH_LONG).show();
+            imageView.setImageBitmap(originalBitmap);
+        }
+    }
+
+    private Bitmap matToBitmap(Mat mat) {
+        Bitmap bmpOut = Bitmap.createBitmap(mat.cols(), mat.rows(), Bitmap.Config.ARGB_8888);
+        Utils.matToBitmap(mat, bmpOut);
+        return bmpOut;
+    }
+
+
+    @NonNull
+    private Mat bitmapToMat(Bitmap bitmap) throws IOException {
+        Mat imgToProcess = new Mat(bitmap.getWidth(), bitmap.getHeight(), CvType.CV_8UC3);
+        Utils.bitmapToMat(bitmap, imgToProcess);
+        return imgToProcess;
     }
 /*
     public void testSetAlgorithm() {
