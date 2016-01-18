@@ -171,10 +171,12 @@ public class TakePhoto extends AppCompatActivity {
 
         SetResult result = SetCVLib.computeAndCircleSets(matToProcess);
 
-        if (result.numSets() > 0) {
+        if (result.getFailedImages().size() > 0) {
+            Bitmap bitmap = matToBitmap(result.getFailedImages().get(0));
+            imageView.setImageBitmap(bitmap);
+        } else if (result.numSets() > 0) {
             Bitmap bitmap = matToBitmap(result.getSetImages().get(0));
             imageView.setImageBitmap(bitmap);
-
         } else {
             Toast.makeText(this, "No sets found", Toast.LENGTH_LONG).show();
             imageView.setImageBitmap(originalBitmap);

@@ -38,28 +38,36 @@ public class SetCVLib {
     final static double CardFilterThreshold = 0.07;
     final static int MaxCardLikeObjects = 18;
     final static String Tag = "SetCVLib";
+    final static String ColorCalibration = "Color";
 
     static Mat globalRet;
+
     public static SetResult computeAndCircleSets(Mat input) {
         List<MatOfPoint> cardContours = extractCards(input);
+        List<MatOfPoint> recognizedContours = new ArrayList<>();
         List<Card> cards = new ArrayList<Card>();
 
         SetResult result = new SetResult();
 
         for (MatOfPoint card : cardContours) {
             Mat flattened = flattenCard(card, input);
+            if (flattened == null) {
+                continue;
+            }
             Card recognized = recognizeCard(flattened);
-            if (recognized != null) {
-                Log.i(Tag, recognized.toString());
-                //return globalRet; //prepImage(flattened, 160);
-                cards.add(recognized);
-            } else {
+            if (recognized == null) {
                 Log.i(Tag, "Could not find");
                 result.addFailedImage(flattened);
+                continue;
             }
+
+            Log.i(Tag, recognized.toString());
+            //return globalRet; //prepImage(flattened, 160);
+            cards.add(recognized);
+            recognizedContours.add(card);
         }
 
-       List<List<Integer>> sets = SetFinder.findSets(cards);
+        List<List<Integer>> sets = SetFinder.findSets(cards);
         for (List<Integer> set : sets) {
             Log.i("SETS", set.toString());
         }
@@ -72,9 +80,12 @@ public class SetCVLib {
         for (List<Integer> set : sets) {
             Mat setImage = input.clone();
             for (Integer i : set) {
-                Imgproc.drawContours(setImage, cardContours, i, new Scalar(0, 255, 0, 255), 35);
+                Imgproc.drawContours(setImage, recognizedContours, i, new Scalar(0, 255, 0, 255), 35);
             }
             result.addSetImage(setImage);
+        }
+        if (globalRet != null) {
+            result.addFailedImage(globalRet);
         }
 
         return result;
@@ -164,6 +175,7 @@ public class SetCVLib {
         Converters.Mat_to_vector_Point2f(cornersMat, corners);
         if (corners.size() != 4) {
             Log.e("SET", "Not a quadrilateral");
+            return null;
         }
 
         // Create the target points
@@ -212,10 +224,16 @@ public class SetCVLib {
         }
         return null;
     }
+
     private static Card.Color identifyColor(Mat colorImage, MatOfPoint contour) {
 
         Rect boundingBox = Imgproc.boundingRect(contour);
         Mat figure = colorImage.submat(boundingBox);
+        Mat whiteBalance = figure.submat(0, 10, 0, 10);
+        Scalar avgWhite = Core.sumElems(whiteBalance).mul(Scalar.all(1), 1 / 100.0);
+        Scalar whiteBalanceVect = avgWhite.mul(Scalar.all(1), 1 / 255.0);
+        globalRet = whiteBalance;
+        Log.i(Tag, "White: " + avgWhite);
         // AHHHH YOU NEED TO SET THIS TO 0 OR YOU WILL BE SAD
         Mat maskedFigure = new Mat(figure.size(), figure.type(), new Scalar(0));
 
@@ -224,9 +242,13 @@ public class SetCVLib {
 
         Scalar avg = Core.sumElems(maskedFigure);
         double scaleFactor = Core.sumElems(thresholdedFigure).val[0] / 255;
-        Scalar colors = avg.mul(Scalar.all(1), 1 / scaleFactor);
+        Scalar colors = avg.mul(Scalar.all(1), 1 / scaleFactor).mul(whiteBalanceVect);
         Scalar yuv = rgbToYUV(colors);
-        return identifyYuv(yuv);
+        Card.Color result = identifyYuv(yuv);
+        Log.i(Tag, "YUV: " + yuv + "identified as " + result);
+        System.out.println(ColorCalibration + "\t" + yuv.val[1] + "\t" + yuv.val[2]);
+        //Log.i(ColorCalibration, yuv.toString());
+        return result;
     }
 
     private static Scalar rgbToYUV(Scalar rgb) {
@@ -234,10 +256,11 @@ public class SetCVLib {
         double g = rgb.val[1];
         double b = rgb.val[2];
 
-        double y =  0.299 * r + 0.587 * g + 0.114 * b;
+        double y = 0.299 * r + 0.587 * g + 0.114 * b;
         double u = -0.147 * r - 0.289 * g + 0.436 * b;
-        double v =  0.615 * r - 0.515 * g - 0.100 * b;
-        return new Scalar(y,u,v);
+        double v = 0.615 * r - 0.515 * g - 0.100 * b;
+
+        return new Scalar(y, u, v);
     }
 
     private static Card.Color identifyYuv(Scalar yuv) {
@@ -248,9 +271,14 @@ public class SetCVLib {
             return Card.Color.GREEN;
         } else if (u > 0 && v > 0) {
             return Card.Color.PURPLE;
-        } else {
+        } else if (u < 0 && v > 0 ){
             return Card.Color.RED;
+        } else if (-1 * v > u) {
+            return Card.Color.GREEN;
+        } else {
+            return Card.Color.PURPLE;
         }
+
     }
 
     private static Card.Shading identifyShading(Mat thresholdedCard, MatOfPoint contour) {
@@ -310,7 +338,7 @@ public class SetCVLib {
 
     private static Card.Shape identifyShape(MatOfPoint contour) {
         double ShapeThreshold = 0.1;
-        HashMap<Card.Shape, MatOfPoint> shapeMapping = new HashMap<Card.Shape, MatOfPoint>(){{
+        HashMap<Card.Shape, MatOfPoint> shapeMapping = new HashMap<Card.Shape, MatOfPoint>() {{
             put(Card.Shape.OVAL, Oval.contour);
             put(Card.Shape.DIAMOND, Diamond.contour);
             put(Card.Shape.SQUIGGLE, Squiggle.contour);
