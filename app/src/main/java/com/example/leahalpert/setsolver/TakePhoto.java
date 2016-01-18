@@ -108,11 +108,23 @@ public class TakePhoto extends AppCompatActivity {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
+        switch (item.getItemId()) {
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+            case R.id.action_settings:
+                // TODO: do something
+                return true;
+
+            case R.id.stream:
+                Intent intent = new Intent();
+                intent.setClass(this, CameraPreviewActivity.class);
+                startActivity(intent);
+                return true;
+
+            case R.id.takephoto:
+                Intent intent2 = new Intent();
+                intent2.setClass(this, TakePhoto.class);
+                startActivity(intent2);
+                return true;
         }
 
         return super.onOptionsItemSelected(item);
