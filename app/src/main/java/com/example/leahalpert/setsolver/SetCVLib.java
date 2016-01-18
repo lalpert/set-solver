@@ -216,6 +216,9 @@ public class SetCVLib {
         if (identifiedShapes.size() > 0) {
             Card.Shape head = identifiedShapes.get(0).second;
             MatOfPoint contour = identifiedShapes.get(0).first;
+            if (Imgproc.contourArea(contour) < 100) {
+                return null;
+            }
             return new Card(head,
                     identifyShading(prepped, contour),
                     Card.intToCount(identifiedShapes.size()),
