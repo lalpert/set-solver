@@ -8,7 +8,7 @@ public class SetFinder {
 
 
     public static List<List<Integer>> findSets(List<Card> cards) {
-        List<List<Integer>> results = new ArrayList<List<Integer>>();
+        List<List<Integer>> results = new ArrayList<>();
 
         int numCards = cards.size();
         for (int i = 0; i < numCards - 2; i++) {

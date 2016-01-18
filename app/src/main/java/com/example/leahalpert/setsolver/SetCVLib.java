@@ -2,7 +2,6 @@ package com.example.leahalpert.setsolver;
 
 import android.util.Log;
 import android.util.Pair;
-import android.widget.Toast;
 
 import com.example.leahalpert.setsolver.contours.CardContour;
 import com.example.leahalpert.setsolver.contours.Diamond;
@@ -45,7 +44,7 @@ public class SetCVLib {
     public static SetResult computeAndCircleSets(Mat input) {
         List<MatOfPoint> cardContours = extractCards(input);
         List<MatOfPoint> recognizedContours = new ArrayList<>();
-        List<Card> cards = new ArrayList<Card>();
+        List<Card> cards = new ArrayList<>();
 
         SetResult result = new SetResult();
 
@@ -80,6 +79,7 @@ public class SetCVLib {
         for (List<Integer> set : sets) {
             Mat setImage = input.clone();
             for (Integer i : set) {
+                Log.d("DRAWING", "card # " + i);
                 Imgproc.drawContours(setImage, recognizedContours, i, new Scalar(0, 255, 0, 255), 35);
             }
             result.addSetImage(setImage);
@@ -235,7 +235,7 @@ public class SetCVLib {
         Mat whiteBalance = figure.submat(0, 10, 0, 10);
         Scalar avgWhite = Core.sumElems(whiteBalance).mul(Scalar.all(1), 1 / 100.0);
         Scalar whiteBalanceVect = avgWhite.mul(Scalar.all(1), 1 / 255.0);
-        globalRet = whiteBalance;
+        //globalRet = whiteBalance;
         Log.i(Tag, "White: " + avgWhite);
         // AHHHH YOU NEED TO SET THIS TO 0 OR YOU WILL BE SAD
         Mat maskedFigure = new Mat(figure.size(), figure.type(), new Scalar(0));
