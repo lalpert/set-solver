@@ -46,7 +46,6 @@ public class SetCVLib {
         List<MatOfPoint> cardContours = extractCards(input);
         List<MatOfPoint> recognizedContours = new ArrayList<>();
         List<Card> cards = new ArrayList<Card>();
-
         SetResult result = new SetResult();
 
         for (MatOfPoint card : cardContours) {
@@ -70,18 +69,15 @@ public class SetCVLib {
         List<Triple> sets = SetFinder.findSets(cards);
         Collections.sort(sets);
 
-        for (Triple set : sets) {
-            Log.i("SETS", set.toString());
-        }
-
         Mat debugImage = input.clone();
-        for (int i=0; i<recognizedContours.size(); i++) {
+        for (int i = 0; i < recognizedContours.size(); i++) {
             Imgproc.drawContours(debugImage, recognizedContours, i, new Scalar(0, 0, 255, 255), 25);
         }
         result.setAllSetsImage(debugImage);
 
 
         for (Triple set : sets) {
+            Log.i("SETS", set.toString());
             Mat setImage = debugImage.clone();
 
             for (Integer i : set) {
@@ -89,11 +85,11 @@ public class SetCVLib {
             }
             result.addSetImage(setImage);
         }
-        
 
         //if (globalRet != null) {
-          //  result.addFailedImage(globalRet);
+        //  result.addFailedImage(globalRet);
         //}
+
         if (sets.isEmpty()) {
             Log.i("SETS", "no sets found!");
             return result;
@@ -285,7 +281,7 @@ public class SetCVLib {
             return Card.Color.GREEN;
         } else if (u > 0 && v > 0) {
             return Card.Color.PURPLE;
-        } else if (u < 0 && v > 0 ){
+        } else if (u < 0 && v > 0) {
             return Card.Color.RED;
         } else if (-1 * v > u) {
             return Card.Color.GREEN;

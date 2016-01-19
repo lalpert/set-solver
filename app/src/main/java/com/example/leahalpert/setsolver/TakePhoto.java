@@ -200,41 +200,5 @@ public class TakePhoto extends AppCompatActivity {
         Utils.bitmapToMat(bitmap, imgToProcess);
         return imgToProcess;
     }
-/*
-    public void testSetAlgorithm() {
-        Card[] cards = idCards(fileUri);
-        List<List<Integer>> results = SetFinder.findSets(cards);
-        TextView textView = (TextView) findViewById(R.id.textDisplay);
-        textView.setText(results.toString());
-    }
 
-    public Card[] idCards(Uri imageUri) {
-        Card cardOne = new Card(
-                Card.Shape.SQUIGGLE,
-                Card.Shading.OPEN,
-                Card.Count.ONE,
-                Card.Color.GREEN, 1);
-
-        Card cardTwo = new Card(
-                Card.Shape.OVAL,
-                Card.Shading.OPEN,
-                Card.Count.ONE,
-                Card.Color.GREEN, 2);
-
-        Card cardThree = new Card(
-                Card.Shape.DIAMOND,
-                Card.Shading.OPEN,
-                Card.Count.ONE,
-                Card.Color.GREEN, 3);
-        ArrayList<Card> cards = new ArrayList<Card>(
-                Arrays.asList(cardOne, cardTwo, cardThree));
-
-
-        Card[] cardArr = cards.toArray(new Card[cards.size()]);
-        return cardArr;
-
-        // example usage: List<List<Integer>> results = SetFinder.findSets(cards);
-
-    }
-    */
 }

@@ -11,6 +11,7 @@ public class Card {
     Color color;
     int id;
 
+    @Override
     public String toString() {
         return count.toString() + "," + shape.toString() + "," + shading.toString() + "," + color.toString();
     }
@@ -22,7 +23,6 @@ public class Card {
                 return Count.TWO;
             case 3:
                 return Count.THREE;
-
         }
         throw new RuntimeException("Count " + i + " invalid.");
     }
