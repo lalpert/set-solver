@@ -30,7 +30,7 @@ import java.util.Set;
 
 /**
  * Created by russell on 12/21/15.
- * <p/>
+ * <p>
  * CV Library to find and identify set cards!
  */
 public class SetCVLib {
@@ -39,13 +39,12 @@ public class SetCVLib {
     final static String Tag = "SetCVLib";
     final static String ColorCalibration = "Color";
 
-    static Mat globalRet;
+    //static Mat globalRet;
 
     public static SetResult computeAndCircleSets(Mat input) {
         List<MatOfPoint> cardContours = extractCards(input);
         List<MatOfPoint> recognizedContours = new ArrayList<>();
         List<Card> cards = new ArrayList<>();
-
         SetResult result = new SetResult();
 
         for (MatOfPoint card : cardContours) {
@@ -66,26 +65,34 @@ public class SetCVLib {
             recognizedContours.add(card);
         }
 
-        List<List<Integer>> sets = SetFinder.findSets(cards);
-        for (List<Integer> set : sets) {
+        List<Triple> sets = SetFinder.findSets(cards);
+        Collections.sort(sets);
+
+        Mat debugImage = input.clone();
+        for (int i = 0; i < recognizedContours.size(); i++) {
+            Imgproc.drawContours(debugImage, recognizedContours, i, new Scalar(0, 0, 255, 255), 25);
+        }
+        result.setAllSetsImage(debugImage);
+
+
+        for (Triple set : sets) {
             Log.i("SETS", set.toString());
-        }
+            Mat setImage = debugImage.clone();
 
-        if (sets.isEmpty()) {
-            Log.i("SETS", "no sets found!");
-            return result;
-        }
-
-        for (List<Integer> set : sets) {
-            Mat setImage = input.clone();
             for (Integer i : set) {
                 Log.d("DRAWING", "card # " + i);
                 Imgproc.drawContours(setImage, recognizedContours, i, new Scalar(0, 255, 0, 255), 35);
             }
             result.addSetImage(setImage);
         }
-        if (globalRet != null) {
-            result.addFailedImage(globalRet);
+
+        //if (globalRet != null) {
+        //  result.addFailedImage(globalRet);
+        //}
+
+        if (sets.isEmpty()) {
+            Log.i("SETS", "no sets found!");
+            return result;
         }
 
         return result;
@@ -235,7 +242,8 @@ public class SetCVLib {
         Mat whiteBalance = figure.submat(0, 10, 0, 10);
         Scalar avgWhite = Core.sumElems(whiteBalance).mul(Scalar.all(1), 1 / 100.0);
         Scalar whiteBalanceVect = avgWhite.mul(Scalar.all(1), 1 / 255.0);
-        //globalRet = whiteBalance;
+        // globalRet = whiteBalance;
+
         Log.i(Tag, "White: " + avgWhite);
         // AHHHH YOU NEED TO SET THIS TO 0 OR YOU WILL BE SAD
         Mat maskedFigure = new Mat(figure.size(), figure.type(), new Scalar(0));
@@ -274,7 +282,7 @@ public class SetCVLib {
             return Card.Color.GREEN;
         } else if (u > 0 && v > 0) {
             return Card.Color.PURPLE;
-        } else if (u < 0 && v > 0 ){
+        } else if (u < 0 && v > 0) {
             return Card.Color.RED;
         } else if (-1 * v > u) {
             return Card.Color.GREEN;
@@ -288,7 +296,8 @@ public class SetCVLib {
         Rect boundingBox = Imgproc.boundingRect(contour);
         Rect center = centerSection(boundingBox);
         Mat centerSection = thresholdedCard.submat(center);
-        Log.i(Tag, Core.mean(centerSection).toString());
+        //globalRet = thresholdedCard;
+        Log.i(Tag, "Shading: " + Core.mean(centerSection).toString());
         double mean = Core.mean(centerSection).val[0];
         final int SolidThresh = 100;
         final int EmptyThresh = 200;
