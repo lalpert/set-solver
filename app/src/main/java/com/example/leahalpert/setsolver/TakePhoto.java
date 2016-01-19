@@ -44,6 +44,7 @@ public class TakePhoto extends AppCompatActivity {
     final int PICK_IMAGE_REQUEST = 123;
     final int TAKE_IMAGE_REQUEST = 456;
     private Uri fileUri;
+    boolean debugMode = false;
 
     /**
      * Connect to Android OpenCVManager
@@ -171,16 +172,19 @@ public class TakePhoto extends AppCompatActivity {
 
         SetResult result = SetCVLib.computeAndCircleSets(matToProcess);
 
-        if (result.getFailedImages().size() > 0) {
+        if (result.getFailedImages().size() > 0 && debugMode) {
             Bitmap bitmap = matToBitmap(result.getFailedImages().get(0));
             imageView.setImageBitmap(bitmap);
         } else if (result.numSets() > 0) {
             Bitmap bitmap = matToBitmap(result.getSetImages().get(0));
             imageView.setImageBitmap(bitmap);
         } else {
+            Bitmap bitmap = matToBitmap(result.getAllSetsImage());
+            imageView.setImageBitmap(bitmap);
             Toast.makeText(this, "No sets found", Toast.LENGTH_LONG).show();
-            imageView.setImageBitmap(originalBitmap);
+
         }
+
     }
 
     private Bitmap matToBitmap(Mat mat) {
