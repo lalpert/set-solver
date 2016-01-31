@@ -1,8 +1,7 @@
 package com.example.leahalpert.setsolver;
 
+
 import android.Manifest;
-import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -11,18 +10,15 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import org.opencv.android.BaseLoaderCallback;
@@ -31,16 +27,12 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.features2d.FeatureDetector;
-import org.opencv.imgproc.Imgproc;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
-import java.util.List;
+import java.util.Locale;
 
 public class TakePhoto extends AppCompatActivity {
 
@@ -86,7 +78,7 @@ public class TakePhoto extends AppCompatActivity {
         }
 
         // Create a media file name
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(new Date());
         File file = new File(mediaStorageDir.getPath() + File.separator +
                 "IMG_" + timeStamp + ".jpg");
 
@@ -133,11 +125,11 @@ public class TakePhoto extends AppCompatActivity {
                     startCameraPreview();
                 }
 
+
                 return true;
 
             case R.id.takephoto:
-                Intent intent2 = new Intent();
-                intent2.setClass(this, TakePhoto.class);
+                Intent intent2 = new Intent(this, TakePhoto.class);
                 startActivity(intent2);
                 return true;
         }
@@ -186,10 +178,9 @@ public class TakePhoto extends AppCompatActivity {
      * This function runs after a photo is taken from the camera app and saved to the phone
      */
     public void onActivityResult(int requestCode, int resultCode, Intent intent) {
-        Intent data = intent;
 
-        if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null) {
-            fileUri = data.getData();
+        if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && intent != null && intent.getData() != null) {
+            fileUri = intent.getData();
         }
 
         if (resultCode == RESULT_OK) {
@@ -205,8 +196,8 @@ public class TakePhoto extends AppCompatActivity {
     public void renderResults() {
         ImageView imageView = (ImageView) findViewById(R.id.imageDisplay);
 
-        Bitmap originalBitmap = null;
-        Mat matToProcess = null;
+        Bitmap originalBitmap;
+        Mat matToProcess;
         try {
             originalBitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), fileUri);
             matToProcess = bitmapToMat(originalBitmap);

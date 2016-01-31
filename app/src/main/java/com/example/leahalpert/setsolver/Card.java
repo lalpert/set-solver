@@ -2,6 +2,7 @@ package com.example.leahalpert.setsolver;
 
 /**
  * Created by eli on 12/20/15.
+ * Represents a single Set card
  */
 public class Card {
 
@@ -34,16 +35,19 @@ public class Card {
         this.color = color;
         this.id = id;
     }
+
     public enum Shape {
         OVAL,
         DIAMOND,
         SQUIGGLE
     }
+
     public enum Shading {
         SOLID,
         STRIPED,
         OPEN
     }
+
     public enum Count {
         ONE,
         TWO,

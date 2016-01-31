@@ -3,10 +3,10 @@ package com.example.leahalpert.setsolver;
 import android.util.Log;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class SetFinder {
+
 
     public static List<Triple> findSets(List<Card> cards) {
         List<Triple> results = new ArrayList<>();
